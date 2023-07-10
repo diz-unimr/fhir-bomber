@@ -1,0 +1,9 @@
+bomber:
+  log-level: info
+  interval: 10m
+  requests: requests.json
+fhir:
+  base:
+  auth:
+    user:
+    password:

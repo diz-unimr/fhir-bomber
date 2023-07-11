@@ -1,0 +1,10 @@
+services:
+
+  fhir-bomber:
+    image: ghcr.io/diz-unimr/fhir-bomber:latest
+    ports:
+      - "8081:8081"
+    environment:
+      BOMBER_LOG_LEVEL: info
+      BOMBER_INTERVAL: 1h
+      FHIR_BASE: http://fhir-base/fhir/

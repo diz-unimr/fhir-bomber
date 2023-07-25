@@ -23,17 +23,17 @@ func Run(reg *prometheus.Registry) {
 }
 
 type Metrics struct {
-	RequestDuration *prometheus.GaugeVec
+	RequestDuration *prometheus.HistogramVec
 	Registry        *prometheus.Registry
 }
 
 func NewMetrics(reg *prometheus.Registry) *Metrics {
 	m := &Metrics{
 		Registry: reg,
-		RequestDuration: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		RequestDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: "fhir_bomber",
-			Name:      "request_duration_seconds",
-			Help:      "Requests duration in seconds",
+			Name:      "request_duration_milliseconds",
+			Help:      "Requests duration in milliseconds",
 		},
 			[]string{
 				"name",

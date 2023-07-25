@@ -32,8 +32,8 @@ func NewMetrics(reg *prometheus.Registry) *Metrics {
 		Registry: reg,
 		RequestDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: "fhir_bomber",
-			Name:      "request_duration_milliseconds",
-			Help:      "Requests duration in milliseconds",
+			Name:      "request_duration_seconds",
+			Help:      "Requests duration in seconds",
 		},
 			[]string{
 				"name",

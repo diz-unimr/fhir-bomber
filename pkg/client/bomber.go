@@ -96,7 +96,7 @@ func (b *Bomber) execute(req Request) {
 
 	log.Info().Str("request", req.Name).Int("code", result.ResponseCode).Dur("latency (ms)", result.Total).Msg("Request completed")
 	// metrics
-	b.Metrics.RequestDuration.With(prometheus.Labels{"name": req.Name, "code": strconv.Itoa(result.ResponseCode)}).Observe(float64(result.Total.Milliseconds()))
+	b.Metrics.RequestDuration.With(prometheus.Labels{"name": req.Name, "code": strconv.Itoa(result.ResponseCode)}).Observe(result.Total.Seconds())
 
 }
 

@@ -18,6 +18,7 @@ type Bomber struct {
 	LogLevel string        `mapstructure:"log-level"`
 	Interval time.Duration `mapstructure:"interval"`
 	Requests string        `mapstructure:"requests"`
+	Workers  int           `mapstructure:"workers"`
 }
 
 type Http struct {

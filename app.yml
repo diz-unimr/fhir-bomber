@@ -2,6 +2,7 @@ bomber:
   log-level: info
   interval: 10m
   requests: requests.json
+  workers: 15
 fhir:
   base:
   auth:

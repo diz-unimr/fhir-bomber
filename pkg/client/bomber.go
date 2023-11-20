@@ -16,9 +16,10 @@ import (
 )
 
 type Bomber struct {
-	Config   config.AppConfig
-	Requests []Request
-	Metrics  *monitoring.Metrics
+	Config     config.AppConfig
+	Requests   []Request
+	NumThreads int
+	Metrics    *monitoring.Metrics
 }
 
 type Request struct {
@@ -35,9 +36,10 @@ type TraceResult struct {
 
 func NewBomber(config config.AppConfig, m *monitoring.Metrics) *Bomber {
 	return &Bomber{
-		Config:   config,
-		Requests: loadRequests(config.Bomber.Requests),
-		Metrics:  m,
+		Config:     config,
+		Requests:   loadRequests(config.Bomber.Requests),
+		Metrics:    m,
+		NumThreads: config.Bomber.Workers,
 	}
 }
 
@@ -60,30 +62,57 @@ func loadRequests(f string) []Request {
 		os.Exit(1)
 	}
 
-	log.Info().Msgf("Requests loaded: %s", string(bytes))
-
 	return requests
 }
 
 func (b *Bomber) Run() {
 
+	numJobs := len(b.Requests)
+	//jobs := make(chan Request, numJobs)
 	var wg sync.WaitGroup
+
+	//// workers
+	//b.createWorkers(&wg, jobs, b.Workers)
+
 	for run := 1; ; run++ {
 
-		for _, r := range b.Requests {
+		jobs := make(chan Request, numJobs)
+		// workers
+		b.createWorkers(&wg, jobs, b.NumThreads)
 
-			wg.Add(1)
+		log.Info().Int("iteration", run).Msg("Run started")
 
-			// execute
-			req := r
-			go func() {
-				defer wg.Done()
-				b.execute(req)
-			}()
+		// jobs
+		for i, j := range b.Requests {
+			j.Name = strconv.Itoa(i)
+			jobs <- j
 		}
+		close(jobs)
+
 		wg.Wait()
 		log.Info().Int("run", run).Msgf("Run [%d] done", run)
 		time.Sleep(b.Config.Bomber.Interval)
+
+	}
+}
+
+func (b *Bomber) createWorkers(wg *sync.WaitGroup, jobs <-chan Request, count int) {
+	// worker
+	for w := 1; w <= count; w++ {
+
+		wg.Add(1)
+		worker := w
+		log.Info().Int("worker", worker).Msg("Worker created")
+
+		go func(jobs <-chan Request) {
+			defer wg.Done()
+
+			for j := range jobs {
+				log.Info().Str("job", j.Name).Int("worker", worker).Msg("New job")
+				b.execute(j)
+				log.Info().Str("job", j.Name).Int("worker", worker).Msg("Job done")
+			}
+		}(jobs)
 	}
 }
 

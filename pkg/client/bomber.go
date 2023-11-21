@@ -22,6 +22,7 @@ type Bomber struct {
 	Requests []Request
 	Workers  int
 	Metrics  *monitoring.Metrics
+	FhirBase url.URL
 }
 
 type Request struct {
@@ -37,11 +38,18 @@ type TraceResult struct {
 }
 
 func NewBomber(config config.AppConfig, m *monitoring.Metrics) *Bomber {
+	baseUrl, err := url.Parse(config.Fhir.Base)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to parse FHIR base url")
+		os.Exit(1)
+	}
+
 	return &Bomber{
 		Config:   config,
 		Requests: loadRequests(config.Bomber.Requests),
 		Metrics:  m,
 		Workers:  config.Bomber.Workers,
+		FhirBase: *baseUrl,
 	}
 }
 
@@ -117,13 +125,12 @@ func (b *Bomber) createWorkers(wg *sync.WaitGroup, jobs <-chan Request, count in
 }
 
 func (b *Bomber) execute(req Request) {
-	target, err := url.JoinPath(b.Config.Fhir.Base, req.Url)
+	reqUrl, err := url.PathUnescape(b.FhirBase.JoinPath(req.Url).String())
 	if err != nil {
-		log.Error().Err(err).Msg("Building request path failed")
+		log.Error().Err(err).Str("request", req.Url).Msg("Failed to join request path")
 		return
 	}
-
-	result, err := b.executeRequest(target)
+	result, err := b.executeRequest(reqUrl)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to execute request")
 		return

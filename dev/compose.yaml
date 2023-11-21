@@ -1,0 +1,15 @@
+services:
+
+  fhir-server:
+    image: samply/blaze:0.23.0
+    restart: unless-stopped
+    environment:
+      BASE_URL: http://localhost
+      JAVA_TOOL_OPTIONS: "-Xmx8g"
+      LOG_LEVEL: debug
+      ENFORCE_REFERENTIAL_INTEGRITY: "false"
+      DB_BLOCK_CACHE_SIZE: 4096
+      DB_RESOURCE_CACHE_SIZE: 2500000
+    ports:
+      - "80:8080"
+      - "9090:8081"

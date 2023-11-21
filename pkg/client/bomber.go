@@ -9,17 +9,19 @@ import (
 	"github.com/rs/zerolog/log"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
 
 type Bomber struct {
-	Config     config.AppConfig
-	Requests   []Request
-	NumThreads int
-	Metrics    *monitoring.Metrics
+	Config   config.AppConfig
+	Requests []Request
+	Workers  int
+	Metrics  *monitoring.Metrics
 }
 
 type Request struct {
@@ -36,10 +38,10 @@ type TraceResult struct {
 
 func NewBomber(config config.AppConfig, m *monitoring.Metrics) *Bomber {
 	return &Bomber{
-		Config:     config,
-		Requests:   loadRequests(config.Bomber.Requests),
-		Metrics:    m,
-		NumThreads: config.Bomber.Workers,
+		Config:   config,
+		Requests: loadRequests(config.Bomber.Requests),
+		Metrics:  m,
+		Workers:  config.Bomber.Workers,
 	}
 }
 
@@ -68,23 +70,21 @@ func loadRequests(f string) []Request {
 func (b *Bomber) Run() {
 
 	numJobs := len(b.Requests)
-	//jobs := make(chan Request, numJobs)
 	var wg sync.WaitGroup
-
-	//// workers
-	//b.createWorkers(&wg, jobs, b.Workers)
 
 	for run := 1; ; run++ {
 
 		jobs := make(chan Request, numJobs)
 		// workers
-		b.createWorkers(&wg, jobs, b.NumThreads)
+		b.createWorkers(&wg, jobs, b.Workers)
 
 		log.Info().Int("iteration", run).Msg("Run started")
 
 		// jobs
 		for i, j := range b.Requests {
-			j.Name = strconv.Itoa(i)
+			if len(strings.TrimSpace(j.Name)) == 0 {
+				j.Name = strconv.Itoa(i + 1)
+			}
 			jobs <- j
 		}
 		close(jobs)
@@ -117,7 +117,13 @@ func (b *Bomber) createWorkers(wg *sync.WaitGroup, jobs <-chan Request, count in
 }
 
 func (b *Bomber) execute(req Request) {
-	result, err := b.executeRequest(b.Config.Fhir.Base + req.Url)
+	target, err := url.JoinPath(b.Config.Fhir.Base, req.Url)
+	if err != nil {
+		log.Error().Err(err).Msg("Building request path failed")
+		return
+	}
+
+	result, err := b.executeRequest(target)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to execute request")
 		return

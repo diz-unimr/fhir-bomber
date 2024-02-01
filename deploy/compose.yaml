@@ -1,7 +1,7 @@
 services:
 
   fhir-bomber:
-    image: ghcr.io/diz-unimr/fhir-bomber:1.2.2
+    image: ghcr.io/diz-unimr/fhir-bomber:1.2.4
     ports:
       - "8081:8081"
     environment:

@@ -1,4 +1,4 @@
-FROM golang:1.19.3-alpine3.16 AS build
+FROM golang:1.20.4-alpine3.16 AS build
 
 WORKDIR /app
 COPY go.* ./
@@ -8,7 +8,7 @@ COPY . .
 RUN go get -d -v
 RUN GOOS=linux GOARCH=amd64 go build -v
 
-FROM alpine:3.16 as run
+FROM alpine:3.20 as run
 
 WORKDIR /app/
 COPY requests.json .
